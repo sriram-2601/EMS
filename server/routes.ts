@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { requireAuth } from "./middlewares/requireAuth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 
@@ -9,28 +9,22 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Auth setup
-  await setupAuth(app);
-  registerAuthRoutes(app);
-
   // === PROFILES ===
-  app.get(api.profiles.me.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const profile = await storage.getProfile(req.user!.id);
+  app.get(api.profiles.me.path, requireAuth, async (req, res) => {
+    const profile = await storage.getProfile(req.dbUser!.id);
     res.json(profile || null);
   });
 
-  app.put(api.profiles.update.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.put(api.profiles.update.path, requireAuth, async (req, res) => {
     const input = api.profiles.update.input.parse(req.body);
     
     // Check if profile exists
-    const existing = await storage.getProfile(req.user!.id);
+    const existing = await storage.getProfile(req.dbUser!.id);
     let profile;
     if (existing) {
-      profile = await storage.updateProfile(req.user!.id, input);
+      profile = await storage.updateProfile(req.dbUser!.id, input);
     } else {
-      profile = await storage.createProfile({ ...input, userId: req.user!.id });
+      profile = await storage.createProfile({ ...input, userId: req.dbUser!.id });
     }
     res.json(profile);
   });
@@ -49,27 +43,24 @@ export async function registerRoutes(
     res.json({ ...course, lessons });
   });
 
-  app.post(api.courses.create.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.post(api.courses.create.path, requireAuth, async (req, res) => {
     const input = api.courses.create.input.parse(req.body);
-    const course = await storage.createCourse({ ...input, mentorId: req.user!.id });
+    const course = await storage.createCourse({ ...input, mentorId: req.dbUser!.id });
     res.status(201).json(course);
   });
 
-  app.post(api.courses.enroll.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.post(api.courses.enroll.path, requireAuth, async (req, res) => {
     const courseId = Number(req.params.id);
     
     // Check existing
-    const existing = await storage.getEnrollment(req.user!.id, courseId);
+    const existing = await storage.getEnrollment(req.dbUser!.id, courseId);
     if (existing) return res.json(existing);
 
-    const enrollment = await storage.createEnrollment({ userId: req.user!.id, courseId });
+    const enrollment = await storage.createEnrollment({ userId: req.dbUser!.id, courseId });
     res.status(201).json(enrollment);
   });
 
-  app.post(api.lessons.create.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.post(api.lessons.create.path, requireAuth, async (req, res) => {
     const courseId = Number(req.params.courseId);
     const input = api.lessons.create.input.parse(req.body);
     const lesson = await storage.createLesson({ ...input, courseId });
@@ -89,26 +80,23 @@ export async function registerRoutes(
     res.json(institute);
   });
 
-  app.post(api.institutes.create.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.post(api.institutes.create.path, requireAuth, async (req, res) => {
     const input = api.institutes.create.input.parse(req.body);
-    const institute = await storage.createInstitute({ ...input, ownerId: req.user!.id });
+    const institute = await storage.createInstitute({ ...input, ownerId: req.dbUser!.id });
     res.status(201).json(institute);
   });
 
-  app.post(api.institutes.apply.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.post(api.institutes.apply.path, requireAuth, async (req, res) => {
     const instituteId = Number(req.params.id);
     const lead = await storage.createInstituteLead({ 
       instituteId, 
-      studentId: req.user!.id,
+      studentId: req.dbUser!.id,
       notes: "Applied via platform"
     });
     res.status(201).json(lead);
   });
 
-  app.get(api.leads.list.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.get(api.leads.list.path, requireAuth, async (req, res) => {
     // In real app, check if user is owner of an institute
     // For now, let's just return leads for the first institute owned by user (simplified)
     // Or just all leads for now if admin/owner
@@ -119,8 +107,7 @@ export async function registerRoutes(
     res.json(leads);
   });
 
-  app.patch(api.leads.updateStatus.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.patch(api.leads.updateStatus.path, requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const { status } = req.body;
     const lead = await storage.updateLeadStatus(id, status);
@@ -133,22 +120,19 @@ export async function registerRoutes(
     res.json(counsellors);
   });
 
-  app.post(api.appointments.create.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.post(api.appointments.create.path, requireAuth, async (req, res) => {
     const input = api.appointments.create.input.parse(req.body);
-    const appointment = await storage.createAppointment({ ...input, studentId: req.user!.id });
+    const appointment = await storage.createAppointment({ ...input, studentId: req.dbUser!.id });
     res.status(201).json(appointment);
   });
 
-  app.get(api.appointments.list.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const appointments = await storage.getAppointmentsByUser(req.user!.id);
+  app.get(api.appointments.list.path, requireAuth, async (req, res) => {
+    const appointments = await storage.getAppointmentsByUser(req.dbUser!.id);
     res.json(appointments);
   });
 
   // === ADMIN ===
   app.get(api.admin.stats.path, async (req, res) => {
-    // if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     // TODO: Check admin role
     const stats = await storage.getStats();
     res.json(stats);
@@ -188,7 +172,6 @@ async function seedDatabase() {
       description: "Top coaching for JEE and NEET.",
       location: "Kota, Rajasthan",
       contactEmail: "info@allen.ac.in",
-      isVerified: true,
       imageUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80"
     });
 
@@ -197,7 +180,6 @@ async function seedDatabase() {
       description: "Premier institute for medical entrance exams.",
       location: "Delhi",
       contactEmail: "admissions@aakash.ac.in",
-      isVerified: true,
       imageUrl: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80"
     });
 

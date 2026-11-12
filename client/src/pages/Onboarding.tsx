@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@clerk/react";
 import { useUpdateProfile } from "@/hooks/use-ems";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ const schema = insertProfileSchema.omit({ userId: true });
 type FormData = z.infer<typeof schema>;
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const updateProfile = useUpdateProfile();
   const [, setLocation] = useLocation();
   const [role, setRole] = useState<string>("student");

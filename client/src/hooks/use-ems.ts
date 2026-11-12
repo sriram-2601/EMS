@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@clerk/react";
 import type { 
   InsertCourse, InsertLesson, InsertInstitute, InsertCounsellor, InsertAppointment,
   UpdateCourseRequest
@@ -8,14 +10,14 @@ import type {
 
 // === PROFILES ===
 export function useProfile() {
+  const { isLoaded, isSignedIn } = useAuth();
   return useQuery({
     queryKey: [api.profiles.me.path],
     queryFn: async () => {
-      const res = await fetch(api.profiles.me.path, { credentials: "include" });
-      if (res.status === 401) return null;
-      if (!res.ok) throw new Error("Failed to fetch profile");
+      const res = await apiRequest("GET", api.profiles.me.path);
       return api.profiles.me.responses[200].parse(await res.json());
     },
+    enabled: isLoaded && !!isSignedIn,
     retry: false,
   });
 }
@@ -25,13 +27,7 @@ export function useUpdateProfile() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch(api.profiles.update.path, {
-        method: api.profiles.update.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to update profile");
+      const res = await apiRequest(api.profiles.update.method, api.profiles.update.path, data);
       return api.profiles.update.responses[200].parse(await res.json());
     },
     onSuccess: () => {
@@ -46,8 +42,7 @@ export function useCourses() {
   return useQuery({
     queryKey: [api.courses.list.path],
     queryFn: async () => {
-      const res = await fetch(api.courses.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch courses");
+      const res = await apiRequest("GET", api.courses.list.path);
       return api.courses.list.responses[200].parse(await res.json());
     },
   });
@@ -58,8 +53,7 @@ export function useCourse(id: number) {
     queryKey: [api.courses.get.path, id],
     queryFn: async () => {
       const url = buildUrl(api.courses.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch course");
+      const res = await apiRequest("GET", url);
       return api.courses.get.responses[200].parse(await res.json());
     },
     enabled: !!id,
@@ -71,13 +65,7 @@ export function useCreateCourse() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (data: InsertCourse) => {
-      const res = await fetch(api.courses.create.path, {
-        method: api.courses.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to create course");
+      const res = await apiRequest(api.courses.create.method, api.courses.create.path, data);
       return api.courses.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -93,11 +81,7 @@ export function useEnrollCourse() {
   return useMutation({
     mutationFn: async (courseId: number) => {
       const url = buildUrl(api.courses.enroll.path, { id: courseId });
-      const res = await fetch(url, {
-        method: api.courses.enroll.method,
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to enroll");
+      const res = await apiRequest(api.courses.enroll.method, url);
       return api.courses.enroll.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -113,13 +97,7 @@ export function useCreateLesson() {
   return useMutation({
     mutationFn: async ({ courseId, ...data }: { courseId: number } & InsertLesson) => {
       const url = buildUrl(api.lessons.create.path, { courseId });
-      const res = await fetch(url, {
-        method: api.lessons.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to create lesson");
+      const res = await apiRequest(api.lessons.create.method, url, data);
       return api.lessons.create.responses[201].parse(await res.json());
     },
     onSuccess: (_, variables) => {
@@ -134,8 +112,7 @@ export function useInstitutes() {
   return useQuery({
     queryKey: [api.institutes.list.path],
     queryFn: async () => {
-      const res = await fetch(api.institutes.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch institutes");
+      const res = await apiRequest("GET", api.institutes.list.path);
       return api.institutes.list.responses[200].parse(await res.json());
     },
   });
@@ -146,8 +123,7 @@ export function useInstitute(id: number) {
     queryKey: [api.institutes.get.path, id],
     queryFn: async () => {
       const url = buildUrl(api.institutes.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch institute");
+      const res = await apiRequest("GET", url);
       return api.institutes.get.responses[200].parse(await res.json());
     },
     enabled: !!id,
@@ -159,13 +135,7 @@ export function useCreateInstitute() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (data: InsertInstitute) => {
-      const res = await fetch(api.institutes.create.path, {
-        method: api.institutes.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to register institute");
+      const res = await apiRequest(api.institutes.create.method, api.institutes.create.path, data);
       return api.institutes.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -180,11 +150,7 @@ export function useApplyInstitute() {
   return useMutation({
     mutationFn: async (instituteId: number) => {
       const url = buildUrl(api.institutes.apply.path, { id: instituteId });
-      const res = await fetch(url, {
-        method: api.institutes.apply.method,
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to apply");
+      const res = await apiRequest(api.institutes.apply.method, url);
       return api.institutes.apply.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -197,8 +163,7 @@ export function useLeads() {
   return useQuery({
     queryKey: [api.leads.list.path],
     queryFn: async () => {
-      const res = await fetch(api.leads.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch leads");
+      const res = await apiRequest("GET", api.leads.list.path);
       return api.leads.list.responses[200].parse(await res.json());
     },
   });
@@ -210,13 +175,7 @@ export function useUpdateLeadStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: "applied" | "contacted" | "joined" | "rejected" }) => {
       const url = buildUrl(api.leads.updateStatus.path, { id });
-      const res = await fetch(url, {
-        method: api.leads.updateStatus.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to update status");
+      const res = await apiRequest(api.leads.updateStatus.method, url, { status });
       return api.leads.updateStatus.responses[200].parse(await res.json());
     },
     onSuccess: () => {
@@ -231,8 +190,7 @@ export function useCounsellors() {
   return useQuery({
     queryKey: [api.counsellors.list.path],
     queryFn: async () => {
-      const res = await fetch(api.counsellors.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch counsellors");
+      const res = await apiRequest("GET", api.counsellors.list.path);
       return api.counsellors.list.responses[200].parse(await res.json());
     },
   });
@@ -242,8 +200,7 @@ export function useAppointments() {
   return useQuery({
     queryKey: [api.appointments.list.path],
     queryFn: async () => {
-      const res = await fetch(api.appointments.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch appointments");
+      const res = await apiRequest("GET", api.appointments.list.path);
       return api.appointments.list.responses[200].parse(await res.json());
     },
   });
@@ -254,13 +211,7 @@ export function useCreateAppointment() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (data: InsertAppointment) => {
-      const res = await fetch(api.appointments.create.path, {
-        method: api.appointments.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to book appointment");
+      const res = await apiRequest(api.appointments.create.method, api.appointments.create.path, data);
       return api.appointments.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -275,8 +226,7 @@ export function useAdminStats() {
   return useQuery({
     queryKey: [api.admin.stats.path],
     queryFn: async () => {
-      const res = await fetch(api.admin.stats.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch stats");
+      const res = await apiRequest("GET", api.admin.stats.path);
       return api.admin.stats.responses[200].parse(await res.json());
     },
   });

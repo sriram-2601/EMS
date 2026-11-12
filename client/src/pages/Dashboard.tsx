@@ -1,11 +1,11 @@
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@clerk/react";
 import { useProfile, useAdminStats } from "@/hooks/use-ems";
 import { Layout } from "@/components/Layout";
 import { StatsCard } from "@/components/StatsCard";
 import { Users, BookOpen, Building2, Calendar } from "lucide-react";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const { data: profile } = useProfile();
   const { data: stats } = useAdminStats();
 
@@ -14,7 +14,7 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold font-display text-slate-900">
+        <h1 data-testid="profile-dashboard" className="text-3xl font-bold font-display text-slate-900">
           Dashboard
         </h1>
         <p className="text-slate-500 mt-2">

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useClerk } from "@clerk/react";
 import { useProfile } from "@/hooks/use-ems";
 import { 
   LayoutDashboard, 
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 
 export function Sidebar() {
   const [location] = useLocation();
-  const { logout } = useAuth();
+  const { signOut } = useClerk();
   const { data: profile } = useProfile();
 
   const menuItems = [
@@ -70,7 +70,7 @@ export function Sidebar() {
         <Button 
           variant="ghost" 
           className="w-full justify-start gap-3 text-slate-400 hover:text-red-400 hover:bg-red-950/30"
-          onClick={() => logout()}
+          onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}
         >
           <LogOut className="w-4 h-4" />
           Logout

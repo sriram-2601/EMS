@@ -43,7 +43,7 @@ export default function Courses() {
     <Layout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold font-display text-slate-900">Courses</h1>
+          <h1 data-testid={profile ? "profile-courses" : undefined} className="text-3xl font-bold font-display text-slate-900">Courses</h1>
           <p className="text-slate-500 mt-1">Explore and enroll in premium courses.</p>
         </div>
         

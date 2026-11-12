@@ -1,17 +1,9 @@
-import { useAuth } from "@/hooks/use-auth";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Building2, Globe2, ArrowRight, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
-  const { isLoading } = useAuth();
-
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
-
-  if (isLoading) return null;
-
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
@@ -26,9 +18,7 @@ export default function Landing() {
           <div className="flex items-center gap-4">
             <Button variant="ghost" className="font-medium text-slate-600">About</Button>
             <Button variant="ghost" className="font-medium text-slate-600">Features</Button>
-            <Button onClick={handleLogin} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 shadow-lg shadow-blue-600/20">
-              Get Started
-            </Button>
+            <Link href="/sign-in"><Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 shadow-lg shadow-blue-600/20">Sign In</Button></Link>
           </div>
         </div>
       </nav>
@@ -52,9 +42,7 @@ export default function Landing() {
               One platform for Mentoring, Coaching Institute Admissions, and Foreign Education Consultation.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={handleLogin} size="lg" className="h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/20 rounded-xl">
-                Start Learning Now <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+              <Link href="/sign-up"><Button size="lg" className="h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/20 rounded-xl">Start Learning Now <ArrowRight className="ml-2 w-5 h-5" /></Button></Link>
               <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-slate-200 hover:bg-slate-50 rounded-xl">
                 For Institutes
               </Button>
